@@ -16,6 +16,7 @@ Plataforma de cotação diária de preços. Fornecedores enviam preços dos seus
 - `npm run lint` — eslint
 - `npm run seed:test` — cria usuários/dados de teste no Supabase (service role; só dev). Credenciais em `docs/supabase-setup.md`
 - `npm run db:sql -- <arquivo.sql>` — aplica um SQL/migração no Postgres (precisa de `SUPABASE_PASSWORD` no `.env`)
+- `npm run classify [-- <backup.json>]` — (re)atribui categorias a todos os produtos e canônicos (família do legado → palavras-chave em `scripts/classify-categories.mts`). Idempotente; relatório em `.local/categorias-atribuidas.csv`. Categorias atuais (18): Carnes bovinas, Aves, Suínos, Peixes e frutos do mar, Embutidos e frios, Laticínios e queijos, Hortifruti, Polpas e congelados, Mercearia, Molhos/temperos, Padaria/salgados/prontos, Sobremesas e doces, Destilados/vinhos/bar, Cervejas e chopes, Bebidas não alcoólicas, Limpeza e higiene, Descartáveis e embalagens, Gelo/carvão/insumos
 - `npm run import:legacy -- <backup.json>` — importa o export do app legado CotaJá (fornecedores, catálogo → canônicos, produtos por fornecedor, cotações). Idempotente; acessos gerados vão para `.local/acessos-fornecedores.csv` (fora do git). Já foi rodado em 2026-11-16 com `~/Downloads/cotaja-backup-2026-11-16.json`
 - `npm run smoke` — com o `npm run dev` rodando, loga com cada usuário de teste e abre todas as páginas
 
@@ -82,6 +83,7 @@ Plataforma de cotação diária de preços. Fornecedores enviam preços dos seus
 - Next 16: o arquivo é `proxy.ts` na raiz (não `middleware.ts`). Usar `getUser()` (valida no servidor), nunca `getSession()` para autorização
 - `PageProps<"/rota">` e `LayoutProps` são globais gerados — rodar `npx next typegen` se uma rota nova não for reconhecida
 - Supabase client no server: `createServerClient` (cookies). No client: `createBrowserClient`
+- **PostgREST devolve no máximo 1.000 linhas por request.** Toda leitura que pode crescer (produtos, cotações, ranking, canônicos) usa `fetchAll()` de `lib/supabase/fetch-all.ts` com `order` estável + `range`. Scripts em `scripts/` também precisam paginar.
 - Datas: `quote_date` é `date` (sem hora) em America/Sao_Paulo. Usar `todayISO()` e `parseDateOnly()` de `lib/format.ts`
 - Imagens externas precisam de domínio autorizado em `next.config.ts` (remotePatterns)
 - `AGENTS.md` é gerado pelo `next dev`; não editar à mão

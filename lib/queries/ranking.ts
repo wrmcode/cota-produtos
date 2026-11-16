@@ -2,6 +2,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { TAGS } from "@/lib/cache-tags";
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 import type { ProductRankingRow } from "@/types/database";
 
 /**
@@ -17,6 +18,9 @@ export async function getAllRankingRows(): Promise<ProductRankingRow[]> {
   cacheTag(TAGS.ranking);
   cacheLife("hours");
 
-  const { data } = await createCacheClient().from("product_ranking").select("*").order("product_name").order("position");
-  return (data ?? []).map((r) => ({ ...r, price: Number(r.price) }));
+  const supabase = createCacheClient();
+  const rows = await fetchAll((from, to) =>
+    supabase.from("product_ranking").select("*").order("product_name").order("position").order("product_id").range(from, to),
+  );
+  return rows.map((r) => ({ ...r, price: Number(r.price) }));
 }

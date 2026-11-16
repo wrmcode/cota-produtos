@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { TAGS } from "@/lib/cache-tags";
 import { todayISO } from "@/lib/format";
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 import type { Customer, Product, Supplier } from "@/types/database";
 
 export interface SupplierWithProfile extends Supplier {
@@ -27,10 +28,10 @@ async function getAdminStatsFor(today: string) {
     supabase.from("customers").select("id", { count: "exact", head: true }).eq("is_active", true),
     supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true),
     supabase.from("price_quotes").select("id", { count: "exact", head: true }).eq("quote_date", today),
-    supabase.from("price_quotes").select("supplier_id").eq("quote_date", today),
+    fetchAll((from, to) => supabase.from("price_quotes").select("supplier_id").eq("quote_date", today).order("id").range(from, to)),
   ]);
 
-  const distinctSuppliers = new Set((suppliersQuotedToday.data ?? []).map((r) => r.supplier_id)).size;
+  const distinctSuppliers = new Set(suppliersQuotedToday.map((r) => r.supplier_id)).size;
 
   return {
     suppliers: suppliers.count ?? 0,
@@ -54,11 +55,11 @@ async function getSuppliersMissingFor(today: string) {
   cacheLife("hours");
 
   const supabase = createCacheClient();
-  const [{ data: suppliers }, { data: quoted }] = await Promise.all([
-    supabase.from("suppliers").select("id, name, city").eq("is_active", true).order("name"),
-    supabase.from("price_quotes").select("supplier_id").eq("quote_date", today),
+  const [{ data: suppliers }, quoted] = await Promise.all([
+    supabase.from("suppliers").select("id, name, city, seller_name, seller_whatsapp").eq("is_active", true).order("name"),
+    fetchAll((from, to) => supabase.from("price_quotes").select("supplier_id").eq("quote_date", today).order("id").range(from, to)),
   ]);
-  const quotedSet = new Set((quoted ?? []).map((q) => q.supplier_id));
+  const quotedSet = new Set(quoted.map((q) => q.supplier_id));
   return (suppliers ?? []).filter((s) => !quotedSet.has(s.id));
 }
 
@@ -115,12 +116,17 @@ export async function listAllProducts(): Promise<ProductWithSupplier[]> {
   cacheTag(TAGS.products, TAGS.suppliers, TAGS.canonical, TAGS.categories);
   cacheLife("hours");
 
-  const { data } = await createCacheClient()
-    .from("products")
-    .select("*, suppliers(name), canonical_products(id, name, unit), product_categories(name)")
-    .eq("is_active", true)
-    .order("normalized_name");
-  return (data ?? []) as ProductWithSupplier[];
+  const supabase = createCacheClient();
+  const rows = await fetchAll((from, to) =>
+    supabase
+      .from("products")
+      .select("*, suppliers(name), canonical_products(id, name, unit), product_categories(name)")
+      .eq("is_active", true)
+      .order("normalized_name")
+      .order("id")
+      .range(from, to),
+  );
+  return rows as unknown as ProductWithSupplier[];
 }
 
 export async function listCanonicalProducts() {
@@ -128,6 +134,6 @@ export async function listCanonicalProducts() {
   cacheTag(TAGS.canonical);
   cacheLife("hours");
 
-  const { data } = await createCacheClient().from("canonical_products").select("*").order("name");
-  return data ?? [];
+  const supabase = createCacheClient();
+  return fetchAll((from, to) => supabase.from("canonical_products").select("*").order("name").order("id").range(from, to));
 }

@@ -41,7 +41,7 @@ export default async function SupplierDashboard() {
         </Button>
       </PageHeader>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
         <StatCard label="Produtos ativos" value={products.length} icon={Package} />
         <StatCard
           label="Enviados hoje"
@@ -50,7 +50,7 @@ export default async function SupplierDashboard() {
           icon={CheckCircle2}
           tone={sentToday === products.length && products.length > 0 ? "brand" : "default"}
         />
-        <StatCard label="Melhor preço em" value={firstPlace} hint="produtos onde você está em 1º" icon={Trophy} tone="dark" />
+        <StatCard label="Melhor preço em" value={firstPlace} hint="produtos onde você está em 1º" icon={Trophy} tone="dark" className="col-span-2 sm:col-span-1" />
       </div>
 
       <SectionCard

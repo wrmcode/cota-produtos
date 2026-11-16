@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { Link2, Link2Off } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Link2 } from "lucide-react";
 import { toast } from "sonner";
-import { linkCanonical, unlinkCanonical } from "@/actions/admin";
+import { linkCanonical } from "@/actions/admin";
+import { AdminProductRowActions } from "@/components/admin/admin-product-row-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,26 +16,35 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/search-input";
+import { TableNoResults } from "@/components/table-no-results";
+import { TableToolbar } from "@/components/table-toolbar";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { ProductWithSupplier } from "@/lib/queries/admin";
+import type { CategoryOption } from "@/lib/queries/categories";
+import { useSearch } from "@/lib/use-search";
 import type { CanonicalProduct } from "@/types/database";
 import { UNITS } from "@/types/schemas";
 
-export function UnifyTable({ products, canonical }: { products: ProductWithSupplier[]; canonical: CanonicalProduct[] }) {
+export function UnifyTable({
+  products,
+  canonical,
+  categories,
+}: {
+  products: ProductWithSupplier[];
+  canonical: CanonicalProduct[];
+  categories: CategoryOption[];
+}) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
-  const [pending, startTransition] = useTransition();
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return products;
-    return products.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.suppliers?.name.toLowerCase().includes(q) || p.canonical_products?.name.toLowerCase().includes(q),
-    );
-  }, [products, search]);
+  const { query, setQuery, filtered } = useSearch(products, (p) => [
+    p.name,
+    p.suppliers?.name,
+    p.canonical_products?.name,
+    p.product_categories?.name,
+  ]);
 
   const toggle = (id: string) =>
     setSelected((prev) => {
@@ -48,48 +58,74 @@ export function UnifyTable({ products, canonical }: { products: ProductWithSuppl
 
   return (
     <>
-      <div className="flex flex-col gap-3 px-5 pb-4 sm:flex-row sm:items-center sm:justify-between">
-        <Input
-          placeholder="Buscar produto, fornecedor ou nome unificado…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+      <TableToolbar>
+        <SearchInput
+          placeholder="Buscar produto, fornecedor, categoria ou nome unificado…"
+          value={query}
+          onChange={setQuery}
           className="sm:max-w-sm"
         />
-        <Button disabled={selected.size === 0} onClick={() => setOpen(true)}>
-          <Link2 />
-          Unificar {selected.size > 0 && `(${selected.size})`}
-        </Button>
-      </div>
+        <div className="flex items-center justify-between gap-3 sm:justify-end">
+          <p className="text-xs text-muted-foreground">
+            {filtered.length} de {products.length}
+          </p>
+          <Button disabled={selected.size === 0} onClick={() => setOpen(true)}>
+            <Link2 />
+            Unificar {selected.size > 0 && `(${selected.size})`}
+          </Button>
+        </div>
+      </TableToolbar>
 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-10 pl-5" />
+            <TableHead className="w-10 pl-4 sm:pl-5" />
             <TableHead>Produto (como o fornecedor cadastrou)</TableHead>
-            <TableHead>Unid.</TableHead>
-            <TableHead>Categoria</TableHead>
-            <TableHead>Fornecedor</TableHead>
-            <TableHead>Nome unificado</TableHead>
-            <TableHead className="pr-5 text-right" />
+            <TableHead className="hidden lg:table-cell">Unid.</TableHead>
+            <TableHead className="hidden xl:table-cell">Categoria</TableHead>
+            <TableHead className="hidden md:table-cell">Fornecedor</TableHead>
+            <TableHead className="hidden sm:table-cell">Nome unificado</TableHead>
+            <TableHead className="pr-4 text-right sm:pr-5">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
+          {filtered.length === 0 && <TableNoResults colSpan={7} />}
           {filtered.map((p) => (
-            <TableRow key={p.id} data-state={selected.has(p.id) ? "selected" : undefined}>
-              <TableCell className="pl-5">
+            <TableRow key={p.id} data-state={selected.has(p.id) ? "selected" : undefined} className={p.is_active ? undefined : "opacity-60"}>
+              <TableCell className="pl-4 sm:pl-5">
                 <input
                   type="checkbox"
-                  className="size-4 accent-brand"
+                  className="size-5 accent-brand sm:size-4"
                   checked={selected.has(p.id)}
                   onChange={() => toggle(p.id)}
                   aria-label={`Selecionar ${p.name}`}
                 />
               </TableCell>
-              <TableCell className="font-medium">{p.name}</TableCell>
-              <TableCell className="text-muted-foreground">{p.unit}</TableCell>
-              <TableCell className="text-muted-foreground">{p.product_categories?.name ?? "—"}</TableCell>
-              <TableCell className="text-muted-foreground">{p.suppliers?.name}</TableCell>
-              <TableCell>
+              <TableCell className="whitespace-normal">
+                <p className="font-medium">
+                  {p.name}
+                  {!p.is_active && <span className="ml-1.5 text-xs font-normal text-muted-foreground">(inativo)</span>}
+                </p>
+                <p className="text-xs text-muted-foreground xl:hidden">
+                  <span className="lg:hidden">{p.unit}</span>
+                  {p.product_categories?.name && (
+                    <>
+                      <span className="lg:hidden"> · </span>
+                      {p.product_categories.name}
+                    </>
+                  )}
+                  <span className="md:hidden"> · {p.suppliers?.name}</span>
+                </p>
+                {p.canonical_products && (
+                  <Badge variant="secondary" className="mt-1 max-w-full truncate rounded-full sm:hidden">
+                    {p.canonical_products.name} / {p.canonical_products.unit}
+                  </Badge>
+                )}
+              </TableCell>
+              <TableCell className="hidden text-muted-foreground lg:table-cell">{p.unit}</TableCell>
+              <TableCell className="hidden text-muted-foreground xl:table-cell">{p.product_categories?.name ?? "—"}</TableCell>
+              <TableCell className="hidden text-muted-foreground md:table-cell">{p.suppliers?.name}</TableCell>
+              <TableCell className="hidden sm:table-cell">
                 {p.canonical_products ? (
                   <Badge variant="secondary" className="rounded-full">
                     {p.canonical_products.name} / {p.canonical_products.unit}
@@ -98,24 +134,8 @@ export function UnifyTable({ products, canonical }: { products: ProductWithSuppl
                   <span className="text-xs text-muted-foreground">—</span>
                 )}
               </TableCell>
-              <TableCell className="pr-5 text-right">
-                {p.canonical_products && (
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Remover unificação"
-                    disabled={pending}
-                    onClick={() =>
-                      startTransition(async () => {
-                        const res = await unlinkCanonical(p.id);
-                        if (res.ok) toast.success("Unificação removida");
-                        else toast.error(res.error);
-                      })
-                    }
-                  >
-                    <Link2Off />
-                  </Button>
-                )}
+              <TableCell className="pr-4 text-right sm:pr-5">
+                <AdminProductRowActions product={p} categories={categories} />
               </TableCell>
             </TableRow>
           ))}

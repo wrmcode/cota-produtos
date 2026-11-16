@@ -19,7 +19,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "flex flex-col justify-between gap-6 rounded-2xl p-5 ring-1 ring-foreground/5",
+        "flex flex-col justify-between gap-4 rounded-2xl p-4 ring-1 ring-foreground/5 sm:gap-6 sm:p-5",
         tone === "default" && "bg-card",
         tone === "dark" && "bg-brand-dark text-brand-dark-foreground",
         tone === "brand" && "bg-brand text-brand-foreground",
@@ -37,10 +37,10 @@ export function StatCard({
             <Icon className="size-3.5" />
           </span>
         )}
-        <span className={cn("text-sm", tone === "default" ? "text-muted-foreground" : "opacity-80")}>{label}</span>
+        <span className={cn("text-xs sm:text-sm", tone === "default" ? "text-muted-foreground" : "opacity-80")}>{label}</span>
       </div>
       <div>
-        <p className="font-heading text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">{value}</p>
+        <p className="font-heading text-xl font-semibold tracking-tight tabular-nums sm:text-3xl">{value}</p>
         {hint && <p className={cn("mt-1 text-xs", tone === "default" ? "text-muted-foreground" : "opacity-70")}>{hint}</p>}
       </div>
     </div>

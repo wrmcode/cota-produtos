@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import type { CurrentUser } from "@/lib/auth";
 import { ROLE_HOME } from "@/lib/supabase/proxy";
 import { getNavForRole, ROLE_LABEL } from "@/lib/navigation";
-import { IconRail } from "./icon-rail";
 import { NavPills } from "./nav-pills";
 import { UserMenu } from "./user-menu";
 import { ViewAsBanner } from "./view-as-banner";
@@ -18,28 +17,25 @@ export function AppShell({ user, children }: { user: CurrentUser; children: Reac
     <div className="flex min-h-full flex-1 flex-col">
       {user.actor && <ViewAsBanner actor={user.actor} role={role} name={displayName} />}
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between gap-4 px-4 sm:px-6">
+        <div className="mx-auto flex h-14 max-w-screen-2xl items-center justify-between gap-4 px-4 sm:h-16 sm:px-6">
           <Logo href={ROLE_HOME[role]} />
           <NavPills items={nav} className="hidden md:flex" />
           <div className="flex items-center gap-1.5">
-            <Button variant="ghost" size="icon-lg" aria-label="Mensagens">
+            <Button variant="ghost" size="icon-lg" aria-label="Mensagens" className="hidden sm:inline-flex">
               <Mail />
             </Button>
-            <Button variant="ghost" size="icon-lg" aria-label="Notificações">
+            <Button variant="ghost" size="icon-lg" aria-label="Notificações" className="hidden sm:inline-flex">
               <Bell />
             </Button>
             <UserMenu name={displayName} email={user.email} roleLabel={ROLE_LABEL[role]} />
           </div>
         </div>
-        <div className="px-4 pb-3 md:hidden">
-          <NavPills items={nav} className="w-full justify-between" />
+        <div className="px-4 pb-2.5 md:hidden">
+          <NavPills items={nav} className="w-full" labels="always" />
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-screen-2xl flex-1 gap-4 px-4 pb-10 sm:px-6">
-        <IconRail items={nav} />
-        <main className="min-w-0 flex-1">{children}</main>
-      </div>
+      <main className="mx-auto w-full max-w-screen-2xl min-w-0 flex-1 px-4 pb-8 sm:px-6 sm:pb-10">{children}</main>
     </div>
   );
 }

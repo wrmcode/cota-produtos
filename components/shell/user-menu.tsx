@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -31,11 +32,14 @@ export function UserMenu({ name, email, roleLabel }: { name: string; email: stri
           </Avatar>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-60">
-          <DropdownMenuLabel>
-            <p className="truncate font-medium">{name}</p>
-            <p className="truncate text-xs font-normal text-muted-foreground">{email}</p>
-            <p className="mt-1 text-xs font-normal text-brand">{roleLabel}</p>
-          </DropdownMenuLabel>
+          {/* GroupLabel do Base UI precisa estar dentro de um Group */}
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>
+              <p className="truncate font-medium">{name}</p>
+              <p className="truncate text-xs font-normal text-muted-foreground">{email}</p>
+              <p className="mt-1 text-xs font-normal text-brand">{roleLabel}</p>
+            </DropdownMenuLabel>
+          </DropdownMenuGroup>
           <DropdownMenuSeparator />
           {/* Formulário + Server Action: funciona mesmo sem JS e não depende do onClick do menu */}
           <form action={signOut} className="p-1">
@@ -50,7 +54,7 @@ export function UserMenu({ name, email, roleLabel }: { name: string; email: stri
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <form action={signOut}>
+      <form action={signOut} className="hidden sm:block">
         <Button type="submit" variant="ghost" size="icon-lg" aria-label="Sair" title="Sair">
           <LogOut />
         </Button>

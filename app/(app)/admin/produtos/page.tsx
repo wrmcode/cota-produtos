@@ -6,18 +6,24 @@ import { PageHeader } from "@/components/page-header";
 import { SectionCard } from "@/components/section-card";
 import { requireRole } from "@/lib/auth";
 import { listAllProducts, listCanonicalProducts } from "@/lib/queries/admin";
+import { listCategoryOptions } from "@/lib/queries/categories";
 
 export const metadata: Metadata = { title: "Produtos" };
 
 export default async function AdminProductsPage() {
-  const [, products, canonical] = await Promise.all([requireRole("admin"), listAllProducts(), listCanonicalProducts()]);
+  const [, products, canonical, categories] = await Promise.all([
+    requireRole("admin"),
+    listAllProducts(),
+    listCanonicalProducts(),
+    listCategoryOptions(),
+  ]);
   const unlinked = products.filter((p) => !p.canonical_id).length;
 
   return (
     <>
       <PageHeader
         title="Produtos"
-        description="Fornecedores cadastram produtos livremente. Unifique nomes diferentes do mesmo item para o ranking comparar corretamente."
+        description="Fornecedores cadastram produtos livremente. Edite nome, unidade e categoria quando precisar e unifique nomes diferentes do mesmo item para o ranking comparar corretamente."
       />
 
       <SectionCard
@@ -28,7 +34,7 @@ export default async function AdminProductsPage() {
         {products.length === 0 ? (
           <EmptyState icon={Package} title="Nenhum produto cadastrado" description="Os produtos aparecem aqui quando os fornecedores cadastrarem." />
         ) : (
-          <UnifyTable products={products} canonical={canonical} />
+          <UnifyTable products={products} canonical={canonical} categories={categories} />
         )}
       </SectionCard>
     </>

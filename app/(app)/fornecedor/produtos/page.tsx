@@ -4,9 +4,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { SectionCard } from "@/components/section-card";
 import { ProductDialog } from "@/components/supplier/product-dialog";
-import { ProductRowActions } from "@/components/supplier/product-row-actions";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SupplierProductsTable } from "@/components/supplier/products-table";
 import { getSessionIdentity, requireRole } from "@/lib/auth";
 import { listCategoryOptions } from "@/lib/queries/categories";
 import { listSupplierProductsByProfile } from "@/lib/queries/supplier";
@@ -38,40 +36,7 @@ export default async function SupplierProductsPage() {
             <ProductDialog categories={categories} />
           </EmptyState>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="pl-5">Produto</TableHead>
-                <TableHead>Unidade</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="pr-5 text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {products.map(({ categoryName, ...p }) => (
-                <TableRow key={p.id} className={p.is_active ? undefined : "opacity-60"}>
-                  <TableCell className="pl-5 font-medium">{p.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{p.unit}</TableCell>
-                  <TableCell>
-                    {categoryName ? (
-                      <Badge variant="secondary" className="rounded-full">{categoryName}</Badge>
-                    ) : (
-                      <span className="text-xs text-warning">Sem categoria</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={p.is_active ? "secondary" : "outline"} className="rounded-full">
-                      {p.is_active ? "Ativo" : "Inativo"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="pr-5 text-right">
-                    <ProductRowActions product={p} categories={categories} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <SupplierProductsTable products={products} categories={categories} />
         )}
       </SectionCard>
     </>

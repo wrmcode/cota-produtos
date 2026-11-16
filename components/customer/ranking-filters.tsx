@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Package, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import { SupplierCombobox } from "@/components/customer/supplier-combobox";
 
 export function RankingFilters({
   suppliers,
@@ -58,20 +58,12 @@ export function RankingFilters({
             aria-label="Buscar produto"
           />
         </div>
-        <NativeSelect
+        <SupplierCombobox
+          suppliers={suppliers}
           value={supplierId}
-          onChange={(e) => push({ fornecedor: e.target.value, produto: "" })}
-          className="h-10 rounded-full sm:w-64"
-          aria-label="Filtrar por fornecedor"
-        >
-          <option value="">Todos os fornecedores (ranking)</option>
-          {suppliers.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-              {s.city ? ` · ${s.city}` : ""}
-            </option>
-          ))}
-        </NativeSelect>
+          onChange={(id) => push({ fornecedor: id, produto: "" })}
+          className="w-full sm:w-72 [&_input]:h-10"
+        />
         {hasFilters && (
           <Button
             variant="ghost"

@@ -25,13 +25,13 @@ export function ViewAsBanner({ actor, role, name }: { actor: Actor; role: UserRo
             {l.role}.
           </span>
         </p>
-        <div className="flex items-center gap-1.5">
-          <Button variant="ghost" size="sm" className="text-brand-dark-foreground hover:bg-white/10 hover:text-brand-dark-foreground" render={<Link href={l.list} />}>
+        <div className="flex w-full items-center gap-1.5 sm:w-auto">
+          <Button variant="ghost" size="sm" className="flex-1 text-brand-dark-foreground hover:bg-white/10 hover:text-brand-dark-foreground sm:flex-none" render={<Link href={l.list} />}>
             <ArrowLeftRight />
             Trocar {l.role}
           </Button>
-          <form action={stopViewAs.bind(null, "/admin")}>
-            <Button type="submit" size="sm" className="bg-brand text-brand-foreground hover:bg-brand/90">
+          <form action={stopViewAs.bind(null, "/admin")} className="flex-1 sm:flex-none">
+            <Button type="submit" size="sm" className="w-full bg-brand text-brand-foreground hover:bg-brand/90">
               <ShieldCheck />
               Voltar ao admin
             </Button>

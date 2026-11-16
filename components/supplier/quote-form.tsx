@@ -6,8 +6,11 @@ import { saveQuotes } from "@/actions/supplier";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/search-input";
+import { TableNoResults } from "@/components/table-no-results";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatBRL, formatDate } from "@/lib/format";
+import { useSearch } from "@/lib/use-search";
 import { cn } from "@/lib/utils";
 
 export interface QuoteFormProduct {
@@ -35,6 +38,7 @@ export function QuoteForm({ products, quoteDate }: { products: QuoteFormProduct[
     Object.fromEntries(products.map((p) => [p.id, toInput(p.todayPrice)])),
   );
   const [pending, startTransition] = useTransition();
+  const { query, setQuery, filtered } = useSearch(products, (p) => [p.name, p.category, p.unit]);
 
   const filled = products.filter((p) => parsePrice(values[p.id] ?? "") !== null).length;
 
@@ -61,30 +65,55 @@ export function QuoteForm({ products, quoteDate }: { products: QuoteFormProduct[
 
   return (
     <div className="space-y-4">
-      <div className="-mx-5 overflow-x-auto">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <SearchInput value={query} onChange={setQuery} placeholder="Buscar produto ou categoria…" className="sm:max-w-sm" />
+        {query && (
+          <p className="text-xs text-muted-foreground">
+            {filtered.length} de {products.length} produto(s)
+          </p>
+        )}
+      </div>
+
+      <div className="-mx-4 sm:-mx-5">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="pl-5">Produto</TableHead>
-              <TableHead>Último preço</TableHead>
-              <TableHead>Posição</TableHead>
-              <TableHead className="pr-5 text-right">Preço de hoje (R$)</TableHead>
+              <TableHead className="pl-4 sm:pl-5">Produto</TableHead>
+              <TableHead className="hidden md:table-cell">Último preço</TableHead>
+              <TableHead className="hidden sm:table-cell">Posição</TableHead>
+              <TableHead className="pr-4 text-right sm:pr-5">Preço de hoje (R$)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {products.map((p) => {
+            {filtered.length === 0 && <TableNoResults colSpan={4} />}
+            {filtered.map((p) => {
               const current = parsePrice(values[p.id] ?? "");
               const diff = current !== null && p.lastPrice ? ((current - p.lastPrice) / p.lastPrice) * 100 : null;
               return (
                 <TableRow key={p.id}>
-                  <TableCell className="pl-5">
+                  <TableCell className="pl-4 whitespace-normal sm:pl-5">
                     <p className="font-medium">{p.name}</p>
                     <p className="text-xs text-muted-foreground">
                       por {p.unit}
                       {p.category && ` · ${p.category}`}
                     </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground md:hidden">
+                      {p.lastPrice !== null && (
+                        <span className="tabular-nums">
+                          Último: {formatBRL(p.lastPrice)} ({formatDate(p.lastDate)})
+                        </span>
+                      )}
+                      {p.position && (
+                        <Badge
+                          variant="secondary"
+                          className={cn("rounded-full sm:hidden", p.position.position === 1 && "bg-brand-soft text-brand")}
+                        >
+                          {p.position.position}º de {p.position.total}
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground tabular-nums">
+                  <TableCell className="hidden text-muted-foreground tabular-nums md:table-cell">
                     {p.lastPrice !== null ? (
                       <>
                         {formatBRL(p.lastPrice)} <span className="text-xs">({formatDate(p.lastDate)})</span>
@@ -93,7 +122,7 @@ export function QuoteForm({ products, quoteDate }: { products: QuoteFormProduct[
                       "—"
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     {p.position ? (
                       <Badge
                         variant="secondary"
@@ -105,12 +134,12 @@ export function QuoteForm({ products, quoteDate }: { products: QuoteFormProduct[
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="pr-5 text-right">
-                    <div className="ml-auto flex max-w-44 flex-col items-end gap-1">
+                  <TableCell className="pr-4 text-right sm:pr-5">
+                    <div className="ml-auto flex w-28 flex-col items-end gap-1 sm:w-36">
                       <Input
                         inputMode="decimal"
                         placeholder="0,00"
-                        className="text-right tabular-nums"
+                        className="h-10 text-right tabular-nums sm:h-8"
                         value={values[p.id] ?? ""}
                         onChange={(e) => setValues((prev) => ({ ...prev, [p.id]: e.target.value }))}
                         aria-label={`Preço de ${p.name}`}
@@ -130,13 +159,13 @@ export function QuoteForm({ products, quoteDate }: { products: QuoteFormProduct[
         </Table>
       </div>
 
-      <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="sticky bottom-0 -mx-4 flex flex-col gap-3 border-t bg-card px-4 pt-4 pb-3 sm:static sm:mx-0 sm:flex-row sm:items-center sm:justify-between sm:px-0 sm:pb-0">
         <p className="text-sm text-muted-foreground">
           {filled} de {products.length} preço(s) preenchido(s)
         </p>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex">
           <Button variant="outline" onClick={copyLast} disabled={pending}>
-            Repetir últimos preços
+            Repetir últimos
           </Button>
           <Button onClick={submit} disabled={pending || filled === 0}>
             {pending ? "Enviando..." : "Enviar cotação"}

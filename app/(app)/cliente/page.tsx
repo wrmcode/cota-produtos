@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ClipboardList, Package, Search, Store } from "lucide-react";
+import { ClipboardList, Package, Store } from "lucide-react";
 import { RankingFilters } from "@/components/customer/ranking-filters";
 import { RankingList } from "@/components/customer/ranking-list";
 import { SupplierPriceList } from "@/components/customer/supplier-price-list";
@@ -36,7 +36,7 @@ export default async function CustomerDashboard({ searchParams }: PageProps<"/cl
     <>
       <PageHeader title={`Bem-vindo, ${name}!`} description={formatDateLong()} />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
         <StatCard label="Produtos cotados" value={stats.products} icon={Package} />
         <StatCard label="Fornecedores ativos" value={stats.suppliers} icon={Store} />
         <StatCard
@@ -45,6 +45,7 @@ export default async function CustomerDashboard({ searchParams }: PageProps<"/cl
           hint={`${stats.quotes} preço(s) no ranking`}
           icon={ClipboardList}
           tone="dark"
+          className="col-span-2 sm:col-span-1"
         />
       </div>
 
@@ -63,11 +64,11 @@ export default async function CustomerDashboard({ searchParams }: PageProps<"/cl
             <EmptyState icon={ClipboardList} title="Ainda não há cotações" description="Assim que os fornecedores enviarem os preços do dia, o ranking aparece aqui." />
           </div>
         ) : productKey && groups ? (
-          <RankingList groups={groups} emptyIcon={Search} single />
+          <RankingList groups={groups} single />
         ) : selectedSupplier && supplierRows ? (
           <SupplierPriceList supplier={selectedSupplier} rows={supplierRows} />
         ) : (
-          <RankingList groups={groups ?? []} emptyIcon={Search} />
+          <RankingList groups={groups ?? []} />
         )}
       </div>
     </>

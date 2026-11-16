@@ -9,7 +9,7 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
         <div className="mb-8 flex justify-center">
           <Logo />
         </div>
-        <div className="rounded-2xl bg-card p-8 shadow-sm ring-1 ring-foreground/5">
+        <div className="rounded-2xl bg-card p-5 shadow-sm sm:p-8 ring-1 ring-foreground/5">
           <Suspense fallback={<Skeleton className="h-64 rounded-2xl" />}>{children}</Suspense>
         </div>
       </div>

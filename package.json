@@ -11,7 +11,8 @@
     "seed:test": "node --env-file=.env scripts/seed-test-users.mts",
     "smoke": "node --env-file=.env scripts/smoke-pages.mts",
     "db:sql": "node --env-file=.env scripts/run-sql.mts",
-    "import:legacy": "node --env-file=.env scripts/import-legacy.mts"
+    "import:legacy": "node --env-file=.env scripts/import-legacy.mts",
+    "classify": "node --env-file=.env scripts/classify-categories.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

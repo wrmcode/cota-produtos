@@ -10,7 +10,7 @@ export function ViewAsButton({ kind, id }: { kind: ViewAsKind; id: string }) {
     <form action={startViewAs.bind(null, kind, id)}>
       <Button type="submit" variant="outline" size="sm" title={label} aria-label={label}>
         <Eye />
-        Acessar
+        <span className="hidden sm:inline">Acessar</span>
       </Button>
     </form>
   );

@@ -5,6 +5,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import type { ActionResult } from "@/actions/admin";
 import { createProduct, updateProduct } from "@/actions/supplier";
 import { CategoryCombobox } from "@/components/category-combobox";
 import { Field } from "@/components/form-field";
@@ -33,11 +34,16 @@ export function ProductDialog({
   categories,
   open: controlledOpen,
   onOpenChange,
+  onSave,
+  description,
 }: {
   product?: Product;
   categories: CategoryOption[];
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
+  /** Ação de salvar alternativa (ex.: admin editando produto de um fornecedor). Padrão: ações do fornecedor. */
+  onSave?: (values: ProductInput) => Promise<ActionResult>;
+  description?: string;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
@@ -54,7 +60,7 @@ export function ProductDialog({
 
   const onSubmit = handleSubmit((values) => {
     startTransition(async () => {
-      const res = product ? await updateProduct(product.id, values) : await createProduct(values);
+      const res = onSave ? await onSave(values) : product ? await updateProduct(product.id, values) : await createProduct(values);
       if (res.ok) {
         toast.success(res.message);
         setOpen(false);
@@ -76,7 +82,7 @@ export function ProductDialog({
         <form onSubmit={onSubmit} className="space-y-4">
           <DialogHeader>
             <DialogTitle>{editing ? "Editar produto" : "Novo produto"}</DialogTitle>
-            <DialogDescription>Use o nome mais comum do item. Ex.: “Peito de frango”, “Tomate italiano”.</DialogDescription>
+            <DialogDescription>{description ?? "Use o nome mais comum do item. Ex.: “Peito de frango”, “Tomate italiano”."}</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 sm:grid-cols-[1fr_120px]">
@@ -85,6 +91,10 @@ export function ProductDialog({
             </Field>
             <Field label="Unidade" error={errors.unit?.message}>
               <NativeSelect {...register("unit")}>
+                {/* Produtos importados do legado podem ter unidade fora da lista padrão: mantemos como opção. */}
+                {product?.unit && !UNITS.includes(product.unit as (typeof UNITS)[number]) && (
+                  <option value={product.unit}>{product.unit}</option>
+                )}
                 {UNITS.map((u) => (
                   <option key={u} value={u}>{u}</option>
                 ))}

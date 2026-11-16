@@ -2,6 +2,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { TAGS } from "@/lib/cache-tags";
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 import type { ProductCategory } from "@/types/database";
 
 export type CategoryOption = Pick<ProductCategory, "id" | "name">;
@@ -27,11 +28,11 @@ export async function listCategoriesWithCounts(): Promise<CategoryWithCount[]> {
   cacheLife("hours");
 
   const supabase = createCacheClient();
-  const [{ data: cats }, { data: prods }] = await Promise.all([
+  const [{ data: cats }, prods] = await Promise.all([
     supabase.from("product_categories").select("*").order("sort_order").order("name"),
-    supabase.from("products").select("category_id").not("category_id", "is", null),
+    fetchAll((from, to) => supabase.from("products").select("category_id").not("category_id", "is", null).order("id").range(from, to)),
   ]);
   const counts = new Map<string, number>();
-  for (const p of prods ?? []) if (p.category_id) counts.set(p.category_id, (counts.get(p.category_id) ?? 0) + 1);
+  for (const p of prods) if (p.category_id) counts.set(p.category_id, (counts.get(p.category_id) ?? 0) + 1);
   return (cats ?? []).map((c) => ({ ...c, productCount: counts.get(c.id) ?? 0 }));
 }

@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { TAGS } from "@/lib/cache-tags";
 import { todayISO } from "@/lib/format";
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 import type { Product, Supplier } from "@/types/database";
 import { getAllRankingRows } from "./ranking";
 
@@ -34,12 +35,17 @@ export async function listSupplierProductsByProfile(profileId: string): Promise<
   cacheTag(TAGS.products, TAGS.categories);
   cacheLife("hours");
 
-  const { data } = await createCacheClient()
-    .from("products")
-    .select("*, product_categories(name), suppliers!inner(id, profile_id)")
-    .eq("suppliers.profile_id", profileId)
-    .order("name");
-  return ((data ?? []) as RawProduct[]).map(withCategory);
+  const supabase = createCacheClient();
+  const rows = await fetchAll((from, to) =>
+    supabase
+      .from("products")
+      .select("*, product_categories(name), suppliers!inner(id, profile_id)")
+      .eq("suppliers.profile_id", profileId)
+      .order("name")
+      .order("id")
+      .range(from, to),
+  );
+  return (rows as unknown as RawProduct[]).map(withCategory);
 }
 
 /** Último preço de cada produto (todos os fornecedores; tabela pequena). */
@@ -48,8 +54,8 @@ async function getLatestPrices() {
   cacheTag(TAGS.quotes);
   cacheLife("hours");
 
-  const { data } = await createCacheClient().from("latest_prices").select("product_id, price, quote_date");
-  return data ?? [];
+  const supabase = createCacheClient();
+  return fetchAll((from, to) => supabase.from("latest_prices").select("product_id, price, quote_date").order("product_id").range(from, to));
 }
 
 /** Cotações de um dia específico (a data faz parte da chave do cache). */
@@ -58,8 +64,8 @@ async function getQuotesForDate(date: string) {
   cacheTag(TAGS.quotes);
   cacheLife("hours");
 
-  const { data } = await createCacheClient().from("price_quotes").select("product_id, price").eq("quote_date", date);
-  return data ?? [];
+  const supabase = createCacheClient();
+  return fetchAll((from, to) => supabase.from("price_quotes").select("product_id, price").eq("quote_date", date).order("id").range(from, to));
 }
 
 /** Produtos ativos com o preço de hoje (se houver) e o último preço informado. */

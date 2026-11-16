@@ -11,10 +11,12 @@ import {
   createCustomerSchema,
   createSupplierSchema,
   parseProductsText,
+  productSchema,
   resetPasswordSchema,
   supplierSchema,
   type CreateCustomerInput,
   type CreateSupplierInput,
+  type ProductInput,
   type ResetPasswordInput,
   type SupplierData,
   type SupplierInput,
@@ -248,4 +250,43 @@ export async function unlinkCanonical(productId: string): Promise<ActionResult> 
   revalidatePath("/admin/produtos");
   revalidatePath("/cliente", "layout");
   return { ok: true };
+}
+
+/** Admin edita qualquer produto de qualquer fornecedor (nome, unidade, categoria). */
+export async function adminUpdateProduct(productId: string, input: ProductInput): Promise<ActionResult> {
+  await requireRole("admin");
+  if (!z.uuid().safeParse(productId).success) return { ok: false, error: "ID inválido" };
+  const parsed = productSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("products")
+    .update({ name: parsed.data.name.trim(), unit: parsed.data.unit, category_id: parsed.data.category_id ?? null })
+    .eq("id", productId);
+  if (error) {
+    return { ok: false, error: error.code === "23505" ? "Esse fornecedor já tem um produto com esse nome e unidade." : error.message };
+  }
+
+  invalidate(TAGS.products, TAGS.ranking);
+  revalidatePath("/admin/produtos");
+  revalidatePath("/fornecedor", "layout");
+  revalidatePath("/cliente", "layout");
+  return { ok: true, message: "Produto atualizado" };
+}
+
+/** Admin ativa/desativa um produto de fornecedor (some do ranking quando inativo). */
+export async function adminToggleProduct(productId: string, is_active: boolean): Promise<ActionResult> {
+  await requireRole("admin");
+  if (!z.uuid().safeParse(productId).success) return { ok: false, error: "ID inválido" };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("products").update({ is_active }).eq("id", productId);
+  if (error) return { ok: false, error: error.message };
+
+  invalidate(TAGS.products, TAGS.ranking);
+  revalidatePath("/admin/produtos");
+  revalidatePath("/fornecedor", "layout");
+  revalidatePath("/cliente", "layout");
+  return { ok: true, message: is_active ? "Produto ativado" : "Produto desativado" };
 }

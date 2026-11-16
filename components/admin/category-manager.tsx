@@ -16,18 +16,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/search-input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { CategoryWithCount } from "@/lib/queries/categories";
+import { matchesSearch } from "@/lib/search";
 
 export function CategoryManager({ categories }: { categories: CategoryWithCount[] }) {
   const [newName, setNewName] = useState("");
   const [filter, setFilter] = useState("");
   const [pending, startTransition] = useTransition();
 
-  const visible = filter.trim()
-    ? categories.filter((c) => c.name.toLowerCase().includes(filter.trim().toLowerCase()))
-    : categories;
+  const visible = categories.filter((c) => matchesSearch(filter, [c.name]));
 
   const add = () =>
     startTransition(async () => {
@@ -59,19 +59,19 @@ export function CategoryManager({ categories }: { categories: CategoryWithCount[
       </form>
 
       <section className="overflow-hidden rounded-2xl bg-card ring-1 ring-foreground/5">
-        <header className="flex flex-col gap-3 px-5 pt-5 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <header className="flex flex-col gap-3 px-4 pt-4 pb-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:pt-5 sm:pb-4">
           <div>
             <h2 className="font-heading text-base font-semibold">Categorias</h2>
             <p className="text-xs text-muted-foreground">{categories.length} cadastrada(s)</p>
           </div>
-          <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filtrar…" className="sm:w-64" />
+          <SearchInput value={filter} onChange={setFilter} placeholder="Buscar categoria…" className="sm:w-64" />
         </header>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="pl-5">Nome</TableHead>
+              <TableHead className="pl-4 sm:pl-5">Nome</TableHead>
               <TableHead className="text-right">Produtos</TableHead>
-              <TableHead className="pr-5 text-right">Ações</TableHead>
+              <TableHead className="pr-4 text-right sm:pr-5">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -111,7 +111,7 @@ function CategoryRow({ category, all }: { category: CategoryWithCount; all: Cate
 
   return (
     <TableRow>
-      <TableCell className="pl-5">
+      <TableCell className="pl-4 whitespace-normal sm:pl-5">
         {editing ? (
           <form
             onSubmit={(e) => {
@@ -144,7 +144,7 @@ function CategoryRow({ category, all }: { category: CategoryWithCount; all: Cate
       <TableCell className="text-right">
         <Badge variant="secondary" className="rounded-full tabular-nums">{category.productCount}</Badge>
       </TableCell>
-      <TableCell className="pr-5 text-right">
+      <TableCell className="pr-4 text-right sm:pr-5">
         <div className="inline-flex gap-1">
           <Button variant="ghost" size="icon-sm" aria-label="Renomear" onClick={() => setEditing(true)} disabled={editing}>
             <Pencil />

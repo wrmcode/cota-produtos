@@ -1,17 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Store, UserPlus } from "lucide-react";
-import { SupplierRowActions } from "@/components/admin/supplier-row-actions";
-import { ViewAsButton } from "@/components/admin/view-as-button";
+import { SuppliersTable } from "@/components/admin/suppliers-table";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { SectionCard } from "@/components/section-card";
-import { WhatsAppLink } from "@/components/whatsapp-link";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireRole } from "@/lib/auth";
-import { formatMinOrder } from "@/lib/format";
 import { listSuppliers } from "@/lib/queries/admin";
 
 export const metadata: Metadata = { title: "Fornecedores" };
@@ -36,55 +31,7 @@ export default async function SuppliersPage() {
             </Button>
           </EmptyState>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="pl-5">Fornecedor</TableHead>
-                <TableHead>Vendedor</TableHead>
-                <TableHead>Pedido mínimo</TableHead>
-                <TableHead>Pagamento / Entrega</TableHead>
-                <TableHead className="text-right">Produtos</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="pr-5 text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {suppliers.map((s) => {
-                const { profiles, products, ...supplier } = s;
-                return (
-                  <TableRow key={s.id} className={s.is_active ? undefined : "opacity-60"}>
-                    <TableCell className="pl-5">
-                      <p className="font-medium">{s.name}</p>
-                      <p className="text-xs text-muted-foreground">{s.supplier_type ?? "—"}</p>
-                    </TableCell>
-                    <TableCell>
-                      <p>{s.seller_name ?? profiles?.full_name ?? "—"}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {s.seller_whatsapp ? <WhatsAppLink number={s.seller_whatsapp} /> : profiles?.email}
-                      </p>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{formatMinOrder(s.min_order_kg, s.min_order_brl)}</TableCell>
-                    <TableCell className="max-w-56">
-                      <p className="truncate text-sm">{s.payment_terms ?? "—"}</p>
-                      <p className="truncate text-xs text-muted-foreground">{s.delivery_info ?? ""}</p>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">{products?.[0]?.count ?? 0}</TableCell>
-                    <TableCell>
-                      <Badge variant={s.is_active ? "secondary" : "outline"} className="rounded-full">
-                        {s.is_active ? "Ativo" : "Inativo"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="pr-5 text-right">
-                      <div className="inline-flex items-center gap-1">
-                        <ViewAsButton kind="supplier" id={s.id} />
-                        <SupplierRowActions supplier={supplier} email={profiles?.email} />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          <SuppliersTable suppliers={suppliers} />
         )}
       </SectionCard>
     </>
