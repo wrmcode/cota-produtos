@@ -85,9 +85,42 @@ for (const c of CASES) {
     report(r.status === 200 && r.errors.length === 0, p, r.status !== 200 ? `${r.status} → ${r.location}` : [r.errors.join(", "), `${r.ms} ms`].filter(Boolean).join(" · "));
   }
   const f = await fetchPage(c.forbidden, cookie);
-  report(f.status === 307, `${c.forbidden} (outro papel) bloqueado`, `${f.status} → ${f.location}`);
+  const isAdmin = c.email.startsWith("admin");
+  report(
+    f.status === 307 && (!isAdmin || f.location.includes("/admin/")),
+    isAdmin ? `${c.forbidden} sem "acessar como" → lista para escolher` : `${c.forbidden} (outro papel) bloqueado`,
+    `${f.status} → ${f.location}`,
+  );
   const home = await fetchPage("/", cookie);
   report(home.status === 307 && home.location.includes(c.pages[0].split("?")[0]), "/ redireciona para a home do papel", `${home.status} → ${home.location}`);
+}
+
+// ---- "Acessar como": admin com cookie de alvo navega nas áreas de fornecedor/cliente ----
+{
+  console.log("\nadmin · acessar como:");
+  const sb = createClient(url, anon, { auth: { persistSession: false } });
+  const { data } = await sb.auth.signInWithPassword({ email: "admin@teste.com", password: "admin123" });
+  const admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
+  const { data: sup } = await admin.from("suppliers").select("profile_id, name").eq("is_active", true).order("name").limit(1).single();
+  const { data: cus } = await admin.from("customers").select("profile_id, name").limit(1).single();
+  const base = sessionCookie(data!.session!);
+  const viewAs = (kind: string, profileId: string, name: string) =>
+    `${base}; cota-view-as=${Buffer.from(JSON.stringify({ kind, profileId, name })).toString("base64url")}`;
+  if (sup) {
+    const r = await fetchPage("/fornecedor", viewAs("supplier", sup.profile_id, sup.name));
+    report(r.status === 200 && r.body.includes("Você está vendo como"), `/fornecedor como "${sup.name}"`, r.status !== 200 ? `${r.status} → ${r.location}` : r.body.includes("Você está vendo como") ? "faixa exibida" : "SEM faixa");
+    const a = await fetchPage("/admin", viewAs("supplier", sup.profile_id, sup.name));
+    report(a.status === 200 && !a.body.includes("Você está vendo como"), "/admin continua sendo o admin com o cookie ativo", `${a.status}`);
+  }
+  if (cus) {
+    const r = await fetchPage("/cliente", viewAs("customer", cus.profile_id, cus.name));
+    report(r.status === 200 && r.body.includes("Você está vendo como"), `/cliente como "${cus.name}"`, r.status !== 200 ? `${r.status} → ${r.location}` : "faixa exibida");
+  }
+  // Não-admin com o cookie forjado NÃO ganha acesso
+  const { data: c2 } = await sb.auth.signInWithPassword({ email: "cliente@teste.com", password: "cliente123" });
+  const forged = `${sessionCookie(c2!.session!)}; cota-view-as=${Buffer.from(JSON.stringify({ kind: "supplier", profileId: sup?.profile_id, name: "x" })).toString("base64url")}`;
+  const f = await fetchPage("/fornecedor", forged);
+  report(f.status === 307, "cliente com cookie forjado é bloqueado em /fornecedor", `${f.status} → ${f.location}`);
 }
 
 console.log(failures ? `\n✖ ${failures} falha(s)` : "\n✔ tudo ok");

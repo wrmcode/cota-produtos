@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Store, UserPlus } from "lucide-react";
 import { SupplierRowActions } from "@/components/admin/supplier-row-actions";
+import { ViewAsButton } from "@/components/admin/view-as-button";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { SectionCard } from "@/components/section-card";
@@ -74,7 +75,10 @@ export default async function SuppliersPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="pr-5 text-right">
-                      <SupplierRowActions supplier={supplier} email={profiles?.email} />
+                      <div className="inline-flex items-center gap-1">
+                        <ViewAsButton kind="supplier" id={s.id} />
+                        <SupplierRowActions supplier={supplier} email={profiles?.email} />
+                      </div>
                     </TableCell>
                   </TableRow>
                 );

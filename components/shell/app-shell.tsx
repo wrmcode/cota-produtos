@@ -7,6 +7,7 @@ import { getNavForRole, ROLE_LABEL } from "@/lib/navigation";
 import { IconRail } from "./icon-rail";
 import { NavPills } from "./nav-pills";
 import { UserMenu } from "./user-menu";
+import { ViewAsBanner } from "./view-as-banner";
 
 export function AppShell({ user, children }: { user: CurrentUser; children: React.ReactNode }) {
   const role = user.profile.role;
@@ -15,6 +16,7 @@ export function AppShell({ user, children }: { user: CurrentUser; children: Reac
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
+      {user.actor && <ViewAsBanner actor={user.actor} role={role} name={displayName} />}
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between gap-4 px-4 sm:px-6">
           <Logo href={ROLE_HOME[role]} />

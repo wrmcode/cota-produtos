@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { decodeViewAs, VIEW_AS_COOKIE, VIEW_AS_HOME, VIEW_AS_ROLE } from "@/lib/view-as";
 import type { Database, UserRole } from "@/types/database";
 
 const PUBLIC_PATHS = ["/login", "/auth", "/definir-senha"];
@@ -14,14 +15,20 @@ const ROLES: UserRole[] = ["admin", "supplier", "customer"];
 
 /**
  * Headers internos preenchidos pelo proxy depois de validar a sessão.
- * Server Components leem via `getCurrentUser()` e evitam repetir a validação
- * (uma ida a menos ao Supabase por página). São sempre sobrescritos aqui,
- * então um cliente não consegue forjá-los.
+ * Server Components leem via `getCurrentUser()` e evitam repetir a validação.
+ * São sempre sobrescritos aqui, então um cliente não consegue forjá-los.
+ *
+ * Em modo "acessar como" (admin vendo um fornecedor/cliente), `userId`/`email`/`role`
+ * passam a ser os do ALVO e `actorId`/`actorRole` identificam o admin real.
  */
 export const AUTH_HEADERS = {
   userId: "x-cota-user-id",
   email: "x-cota-user-email",
   role: "x-cota-user-role",
+  actorId: "x-cota-actor-id",
+  actorEmail: "x-cota-actor-email",
+  actorRole: "x-cota-actor-role",
+  viewAsName: "x-cota-view-as-name",
 } as const;
 
 function isRole(v: unknown): v is UserRole {
@@ -79,7 +86,11 @@ export async function updateSession(request: NextRequest) {
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
     role = profile?.role ?? "customer";
   }
-  const home = ROLE_HOME[role];
+
+  // "Acessar como": só para admin, e só fora da área /admin
+  const viewAs = role === "admin" && !pathname.startsWith("/admin") ? decodeViewAs(request.cookies.get(VIEW_AS_COOKIE)?.value) : null;
+  const effectiveRole: UserRole = viewAs ? VIEW_AS_ROLE[viewAs.kind] : role;
+  const home = viewAs ? VIEW_AS_HOME[viewAs.kind] : ROLE_HOME[role];
 
   // Logado tentando acessar login ou raiz → manda pra home do papel
   if (pathname === "/" || pathname.startsWith("/login")) {
@@ -89,20 +100,43 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Bloqueia acesso a área de outro papel
-  const forbidden = (Object.entries(ROLE_HOME) as [UserRole, string][]).some(
-    ([r, prefix]) => r !== role && pathname.startsWith(prefix),
-  );
-  if (forbidden) {
-    const url = request.nextUrl.clone();
-    url.pathname = home;
-    url.search = "";
-    return NextResponse.redirect(url);
+  // Admin sem "acessar como" numa área de fornecedor/cliente → vai escolher quem ver
+  if (role === "admin" && !viewAs) {
+    const pick = pathname.startsWith("/fornecedor") ? "/admin/fornecedores" : pathname.startsWith("/cliente") ? "/admin/clientes" : null;
+    if (pick) {
+      const url = request.nextUrl.clone();
+      url.pathname = pick;
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
   }
 
-  requestHeaders.set(AUTH_HEADERS.userId, user.id);
-  requestHeaders.set(AUTH_HEADERS.email, user.email);
-  requestHeaders.set(AUTH_HEADERS.role, role);
+  // Bloqueia acesso a área de outro papel (admin pode entrar em qualquer área)
+  if (role !== "admin") {
+    const forbidden = (Object.entries(ROLE_HOME) as [UserRole, string][]).some(
+      ([r, prefix]) => r !== role && pathname.startsWith(prefix),
+    );
+    if (forbidden) {
+      const url = request.nextUrl.clone();
+      url.pathname = home;
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  if (viewAs) {
+    requestHeaders.set(AUTH_HEADERS.userId, viewAs.profileId);
+    requestHeaders.set(AUTH_HEADERS.email, "");
+    requestHeaders.set(AUTH_HEADERS.role, effectiveRole);
+    requestHeaders.set(AUTH_HEADERS.actorId, user.id);
+    requestHeaders.set(AUTH_HEADERS.actorEmail, user.email);
+    requestHeaders.set(AUTH_HEADERS.actorRole, role);
+    requestHeaders.set(AUTH_HEADERS.viewAsName, encodeURIComponent(viewAs.name));
+  } else {
+    requestHeaders.set(AUTH_HEADERS.userId, user.id);
+    requestHeaders.set(AUTH_HEADERS.email, user.email);
+    requestHeaders.set(AUTH_HEADERS.role, role);
+  }
   const forwarded = NextResponse.next({ request: { headers: requestHeaders } });
   // Preserva cookies renovados pelo setAll
   response.cookies.getAll().forEach((c) => forwarded.cookies.set(c));

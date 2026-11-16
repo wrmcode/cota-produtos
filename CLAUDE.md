@@ -16,6 +16,7 @@ Plataforma de cotação diária de preços. Fornecedores enviam preços dos seus
 - `npm run lint` — eslint
 - `npm run seed:test` — cria usuários/dados de teste no Supabase (service role; só dev). Credenciais em `docs/supabase-setup.md`
 - `npm run db:sql -- <arquivo.sql>` — aplica um SQL/migração no Postgres (precisa de `SUPABASE_PASSWORD` no `.env`)
+- `npm run import:legacy -- <backup.json>` — importa o export do app legado CotaJá (fornecedores, catálogo → canônicos, produtos por fornecedor, cotações). Idempotente; acessos gerados vão para `.local/acessos-fornecedores.csv` (fora do git). Já foi rodado em 2026-11-16 com `~/Downloads/cotaja-backup-2026-11-16.json`
 - `npm run smoke` — com o `npm run dev` rodando, loga com cada usuário de teste e abre todas as páginas
 
 ## Papéis e rotas
@@ -23,13 +24,15 @@ Plataforma de cotação diária de preços. Fornecedores enviam preços dos seus
 - `supplier` → `/fornecedor/*` (cotação do dia, meus produtos)
 - `customer` → `/cliente/*` (ranking, fornecedores)
 - `proxy.ts` renova a sessão e bloqueia acesso cruzado entre papéis. `lib/auth.ts` (`requireRole`) é a segunda barreira dentro das páginas.
+- **"Acessar como"** (`lib/view-as.ts`, `actions/view-as.ts`): admin escolhe fornecedor/cliente na lista e navega nas telas reais do perfil com permissão de edição (RLS do admin cobre). Cookie httpOnly `cota-view-as` só é honrado pelo proxy quando o token é de admin e fora de `/admin`; `getCurrentUser().actor` identifica o admin real e aciona a faixa `ViewAsBanner`. Admin em `/fornecedor` ou `/cliente` sem alvo é redirecionado para a lista escolher.
 - **Cadastro manual pela equipe** em `/admin/fornecedores/novo` e `/admin/clientes/novo` (admin define e-mail + senha via `auth.admin.createUser`, service role). Sem cadastro público, sem e-mails de convite. Senha redefinida pelo admin nas ações da linha.
 
 ## Modelo de dados (ver `supabase/migrations/0001_init.sql`)
 - `profiles` (1:1 auth.users, `role`), `suppliers`, `customers`
 - `products` pertence ao fornecedor (cadastro livre). `normalized_name` é gerado (unaccent/lower).
 - `product_categories` é **controlada só pelo admin** (`/admin/categorias`); `products.category_id` e `canonical_products.category_id` apontam para ela. Fornecedor escolhe via combobox com filtro (`components/category-combobox.tsx`), nunca digita categoria livre. Migrações novas vão em `supabase/migrations/000N_*.sql` (nunca editar as já aplicadas).
-- `canonical_products` + `products.canonical_id`: admin unifica nomes diferentes do mesmo item.
+- `canonical_products` + `products.canonical_id`: admin unifica nomes diferentes do mesmo item. O catálogo legado (820 itens) já entrou como canônico e os produtos importados já estão vinculados; produtos novos cadastrados por fornecedores entram sem vínculo até o admin unificar.
+- Logins de fornecedores importados seguem `slug@fornecedor.cota.local` (não recebem e-mail; a equipe repassa a senha do CSV). Fornecedores do legado sem catálogo tiveram produtos criados a partir do texto "itens que fornece" (unidade kg, sem categoria) — revisar em `/admin/produtos`.
 - `price_quotes` único por (`product_id`, `quote_date`). Reenviar no mesmo dia sobrescreve.
 - Views: `latest_prices` (último preço por produto) e `product_ranking` (posição por `group_key` = canônico ou nome normalizado + unidade).
 - RLS em todas as tabelas; `is_admin()` e `current_user_role()` são security definer.

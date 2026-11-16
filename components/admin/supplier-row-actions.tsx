@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { MoreHorizontal } from "lucide-react";
+import { Eye, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { toggleActive } from "@/actions/admin";
+import { startViewAs } from "@/actions/view-as";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -28,6 +29,11 @@ export function SupplierRowActions({ supplier, email }: { supplier: Supplier; em
           <MoreHorizontal />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => startTransition(() => startViewAs("supplier", supplier.id))}>
+            <Eye className="size-4" />
+            Acessar como fornecedor
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setEditOpen(true)}>Editar</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setPwdOpen(true)}>Redefinir senha</DropdownMenuItem>
           <DropdownMenuSeparator />

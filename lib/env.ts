@@ -17,7 +17,10 @@ const parsed = schema.safeParse({
 
 if (!parsed.success) {
   const issues = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");
-  throw new Error(`Variáveis de ambiente inválidas. Confira o .env.local:\n${issues}`);
+  const where = process.env.VERCEL
+    ? "Cadastre-as em Vercel → Project → Settings → Environment Variables (Production e Preview) e refaça o deploy."
+    : "Confira o arquivo .env (ou .env.local) na raiz do projeto — veja .env.example.";
+  throw new Error(`Variáveis de ambiente ausentes ou inválidas:\n${issues}\n${where}`);
 }
 
 export const env = parsed.data;
