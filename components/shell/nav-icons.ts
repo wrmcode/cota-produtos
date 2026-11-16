@@ -1,4 +1,4 @@
-import { ClipboardList, LayoutDashboard, Package, Store, Tags, Users, type LucideIcon } from "lucide-react";
+import { ClipboardList, LayoutDashboard, Package, Store, Tags, Upload, Users, type LucideIcon } from "lucide-react";
 
 /**
  * Ícones de navegação referenciados por nome. Server Components só podem
@@ -12,6 +12,7 @@ export const NAV_ICONS = {
   package: Package,
   clipboard: ClipboardList,
   tags: Tags,
+  upload: Upload,
 } satisfies Record<string, LucideIcon>;
 
 export type NavIconName = keyof typeof NAV_ICONS;

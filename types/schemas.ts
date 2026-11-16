@@ -142,3 +142,21 @@ export type ResetPasswordInput = z.input<typeof resetPasswordSchema>;
 export type ProductInput = z.input<typeof productSchema>;
 export type CategoryInput = z.input<typeof categorySchema>;
 export type QuotesInput = z.infer<typeof quotesSchema>;
+
+/** Linha aprovada pelo admin na importação assistida. `product_id` vazio = criar produto novo. */
+export const importRowSchema = z.object({
+  product_id: z.preprocess((v) => (v === "" || v === null ? undefined : v), z.uuid().optional()),
+  name: z.string().trim().min(2, "Informe o nome do produto"),
+  unit: z.string().trim().min(1, "Informe a unidade"),
+  category_id: optionalUuid,
+  price: z.coerce.number().nonnegative("Preço inválido"),
+});
+
+export const importCommitSchema = z.object({
+  supplier_id: z.uuid("Escolha o fornecedor"),
+  quote_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
+  rows: z.array(importRowSchema).min(1, "Nenhuma linha selecionada"),
+});
+
+export type ImportRowInput = z.input<typeof importRowSchema>;
+export type ImportCommitInput = z.input<typeof importCommitSchema>;

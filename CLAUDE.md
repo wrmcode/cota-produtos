@@ -21,12 +21,18 @@ Plataforma de cotação diária de preços. Fornecedores enviam preços dos seus
 - `npm run smoke` — com o `npm run dev` rodando, loga com cada usuário de teste e abre todas as páginas
 
 ## Papéis e rotas
-- `admin` → `/admin/*` (dashboard, fornecedores, clientes, unificação de produtos)
+- `admin` → `/admin/*` (dashboard, fornecedores, clientes, unificação de produtos, importação assistida)
 - `supplier` → `/fornecedor/*` (cotação do dia, meus produtos)
 - `customer` → `/cliente/*` (ranking, fornecedores)
 - `proxy.ts` renova a sessão e bloqueia acesso cruzado entre papéis. `lib/auth.ts` (`requireRole`) é a segunda barreira dentro das páginas.
 - **"Acessar como"** (`lib/view-as.ts`, `actions/view-as.ts`): admin escolhe fornecedor/cliente na lista e navega nas telas reais do perfil com permissão de edição (RLS do admin cobre). Cookie httpOnly `cota-view-as` só é honrado pelo proxy quando o token é de admin e fora de `/admin`; `getCurrentUser().actor` identifica o admin real e aciona a faixa `ViewAsBanner`. Admin em `/fornecedor` ou `/cliente` sem alvo é redirecionado para a lista escolher.
 - **Cadastro manual pela equipe** em `/admin/fornecedores/novo` e `/admin/clientes/novo` (admin define e-mail + senha via `auth.admin.createUser`, service role). Sem cadastro público, sem e-mails de convite. Senha redefinida pelo admin nas ações da linha.
+
+## Importação assistida por IA (`/admin/importar`, só admin)
+- Admin cola texto ou envia imagens/PDF/planilhas (XLSX/XLS/CSV) de uma lista de preços. `actions/import.ts` → `lib/import/extract.ts` monta partes neutras (planilhas viram CSV via SheetJS; imagens/PDF vão em base64) e despacha para o provedor em `lib/import/providers/*`: `gemini.ts` (`@google/genai`, `responseJsonSchema` gerado com `z.toJSONSchema`) ou `anthropic.ts` (`@anthropic-ai/sdk`, `zodOutputFormat`). O schema Zod `extractionSchema` é o mesmo para os dois.
+- Provedor escolhido em `lib/ai-provider.ts`: `AI_PROVIDER` força; senão Anthropic se houver `ANTHROPIC_API_KEY`, senão Gemini se houver `GEMINI_API_KEY` (camada gratuita do AI Studio; modelo `GEMINI_MODEL`, padrão `gemini-2.5-flash`). Sem chave nenhuma a página mostra aviso e nada quebra.
+- Fluxo: extrair → tabela de conferência (`components/admin/import-wizard.tsx`: fornecedor, data, nome, unidade, categoria, preço, vínculo com produto existente por nome normalizado) → `commitImport` cria produtos novos e faz upsert em `price_quotes` (`product_id, quote_date`). Invalida `products`, `quotes`, `ranking`.
+- `next.config.ts`: `experimental.serverActions.bodySizeLimit = 25mb` por causa dos uploads.
 
 ## Modelo de dados (ver `supabase/migrations/0001_init.sql`)
 - `profiles` (1:1 auth.users, `role`), `suppliers`, `customers`

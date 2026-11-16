@@ -137,3 +137,29 @@ export async function listCanonicalProducts() {
   const supabase = createCacheClient();
   return fetchAll((from, to) => supabase.from("canonical_products").select("*").order("name").order("id").range(from, to));
 }
+
+export interface ProductOption {
+  id: string;
+  name: string;
+  unit: string;
+  normalized_name: string;
+  category_id: string | null;
+  is_active: boolean;
+}
+
+/** Produtos de um fornecedor para casar com linhas importadas. */
+export async function listSupplierProductOptions(supplierId: string): Promise<ProductOption[]> {
+  "use cache";
+  cacheTag(TAGS.products);
+  cacheLife("hours");
+
+  const supabase = createCacheClient();
+  return fetchAll((from, to) =>
+    supabase
+      .from("products")
+      .select("id, name, unit, normalized_name, category_id, is_active")
+      .eq("supplier_id", supplierId)
+      .order("normalized_name")
+      .range(from, to),
+  );
+}

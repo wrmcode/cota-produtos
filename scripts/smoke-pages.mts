@@ -13,7 +13,7 @@ const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const projectRef = new URL(url).hostname.split(".")[0];
 
 const CASES = [
-  { email: "admin@teste.com", password: "admin123", pages: ["/admin", "/admin/fornecedores", "/admin/fornecedores/novo", "/admin/clientes", "/admin/clientes/novo", "/admin/produtos", "/admin/categorias"], forbidden: "/cliente" },
+  { email: "admin@teste.com", password: "admin123", pages: ["/admin", "/admin/fornecedores", "/admin/fornecedores/novo", "/admin/clientes", "/admin/clientes/novo", "/admin/produtos", "/admin/categorias", "/admin/importar"], forbidden: "/cliente" },
   { email: "fornecedor@teste.com", password: "fornecedor123", pages: ["/fornecedor", "/fornecedor/produtos"], forbidden: "/admin" },
   { email: "cliente@teste.com", password: "cliente123", pages: ["/cliente", "/cliente?q=frango", "/cliente/fornecedores", "PRODUCT_LINK"], forbidden: "/fornecedor" },
 ];

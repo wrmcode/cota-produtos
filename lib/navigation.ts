@@ -17,6 +17,7 @@ export function getNavForRole(role: UserRole): NavItem[] {
         { href: "/admin/clientes", label: "Clientes", icon: "users" },
         { href: "/admin/produtos", label: "Produtos", icon: "package" },
         { href: "/admin/categorias", label: "Categorias", icon: "tags" },
+        { href: "/admin/importar", label: "Importar", icon: "upload" },
       ];
     case "supplier":
       return [
