@@ -21,6 +21,7 @@ import {
 import { CategoryCombobox } from "@/components/category-combobox";
 import { SupplierCombobox } from "@/components/customer/supplier-combobox";
 import { Field } from "@/components/form-field";
+import { shrinkImage } from "@/lib/import/shrink-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -166,7 +167,8 @@ export function ImportWizard({
     startTransition(async () => {
       const fd = new FormData();
       fd.set("text", text);
-      for (const f of files) fd.append("files", f);
+      const prepared = await Promise.all(files.map(shrinkImage));
+      for (const f of prepared) fd.append("files", f);
       const res = await extractImport(fd);
       if (!res.ok) {
         toast.error(res.error);
