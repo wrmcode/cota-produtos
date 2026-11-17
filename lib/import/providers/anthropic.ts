@@ -43,6 +43,15 @@ export async function extractWithAnthropic(
   parts: ImportPart[],
   system: string,
 ): Promise<ExtractionOutcome> {
+  // Limite da API por imagem; o navegador já reduz fotos (lib/import/shrink-image.ts).
+  const tooBig = parts.some(
+    (p) => p.kind === "image" && p.base64.length * 0.75 > 5 * 1024 * 1024,
+  );
+  if (tooBig)
+    throw new Error(
+      "Imagem acima de 5 MB. Reduza a foto ou envie em JPG/PNG para ser comprimida.",
+    );
+
   const response = await getClient().messages.parse({
     model: env.ANTHROPIC_MODEL,
     max_tokens: 16000,
