@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { SupplierRowActions } from "@/components/admin/supplier-row-actions";
 import { ViewAsButton } from "@/components/admin/view-as-button";
 import { SearchInput } from "@/components/search-input";
+import { SegmentFilter, useSegmentFilter } from "@/components/segment-filter";
 import { TableNoResults } from "@/components/table-no-results";
 import { TableToolbar } from "@/components/table-toolbar";
 import { Badge } from "@/components/ui/badge";
@@ -43,7 +44,8 @@ export function SuppliersTable({
 }: {
   suppliers: SupplierWithProfile[];
 }) {
-  const { query, setQuery, filtered } = useSearch(suppliers, (s) => [
+  const { segment, setSegment, segments, bySegment } = useSegmentFilter(suppliers);
+  const { query, setQuery, filtered } = useSearch(bySegment, (s) => [
     s.name,
     s.seller_name,
     s.city,
@@ -103,6 +105,13 @@ export function SuppliersTable({
           </NativeSelect>
         </div>
       </TableToolbar>
+      <SegmentFilter
+        segments={segments}
+        value={segment}
+        onChange={setSegment}
+        total={suppliers.length}
+        className="mx-0 px-4 pb-3 sm:px-5"
+      />
 
       <Table>
         <TableHeader>
@@ -123,7 +132,16 @@ export function SuppliersTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filtered.length === 0 && <TableNoResults colSpan={7} />}
+          {filtered.length === 0 && (
+            <TableNoResults
+              colSpan={7}
+              message={
+                segment && !query.trim()
+                  ? "Nenhum fornecedor nesse segmento."
+                  : "Nenhum resultado para essa busca."
+              }
+            />
+          )}
           {sorted.map((s) => {
             const { profiles, products, ...supplier } = s;
             const seller = s.seller_name ?? profiles?.full_name ?? "—";

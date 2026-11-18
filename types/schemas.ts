@@ -26,14 +26,19 @@ const optionalText = z.string().trim().optional();
 
 export const SUPPLIER_TYPES = [
   "Açougue",
+  "Frigorífico",
   "Hortifruti",
-  "Distribuidora",
-  "Laticínios",
-  "Bebidas",
-  "Padaria",
+  "Frios e laticínios",
   "Peixaria",
+  "Distribuidora",
+  "Atacarejo",
+  "Bebidas",
+  "Polpas e sucos",
+  "Padaria",
   "Mercearia",
+  "Temperos",
   "Embalagens",
+  "Limpeza",
   "Outro",
 ] as const;
 

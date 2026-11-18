@@ -14,6 +14,7 @@ import { ColumnsToggle } from "@/components/columns-toggle";
 import { SupplierTypeBadge } from "@/components/customer/supplier-info";
 import { EmptyState } from "@/components/empty-state";
 import { SearchInput } from "@/components/search-input";
+import { SegmentFilter, useSegmentFilter } from "@/components/segment-filter";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { WhatsAppLink } from "@/components/whatsapp-link";
@@ -49,7 +50,8 @@ export function SupplierCards({
   suppliers: SupplierPublic[];
   stats: Record<string, SupplierCardStats>;
 }) {
-  const { query, setQuery, filtered } = useSearch(suppliers, (s) => [
+  const { segment, setSegment, segments, bySegment } = useSegmentFilter(suppliers);
+  const { query, setQuery, filtered } = useSearch(bySegment, (s) => [
     s.name,
     s.city,
     s.seller_name,
@@ -115,12 +117,14 @@ export function SupplierCards({
         </div>
       </div>
 
+      <SegmentFilter segments={segments} value={segment} onChange={setSegment} total={suppliers.length} />
+
       {filtered.length === 0 ? (
         <div className="rounded-2xl bg-card ring-1 ring-foreground/5">
           <EmptyState
             icon={Search}
             title="Nenhum fornecedor encontrado"
-            description="Tente outro termo de busca."
+            description={segment ? `Nenhum fornecedor de ${segment} com esse termo. Tente outro termo ou escolha "Todos".` : "Tente outro termo de busca."}
           />
         </div>
       ) : (

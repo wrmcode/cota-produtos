@@ -13,7 +13,8 @@ type Missing = Awaited<ReturnType<typeof getSuppliersMissingToday>>[number];
 /** Lembrete amigável pré-preenchido no WhatsApp do vendedor. */
 function reminderMessage(s: Missing): string {
   const firstName = s.seller_name?.trim().split(/\s+/)[0];
-  const greeting = firstName ? `Olá, ${firstName}! Tudo bem?` : "Olá! Tudo bem?";
+  // "Atendimento" é o padrão de quem não tem vendedor nomeado: saudação genérica
+  const greeting = firstName && firstName !== "Atendimento" ? `Olá, ${firstName}! Tudo bem?` : "Olá! Tudo bem?";
   return [
     `${greeting} 😊`,
     "",

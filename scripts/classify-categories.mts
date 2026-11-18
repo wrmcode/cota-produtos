@@ -1,7 +1,7 @@
 /**
  * Atribui a cada produto (e canônico) a categoria que mais faz sentido.
  *
- *   npm run classify -- ~/Downloads/cotaja-backup-2026-11-16.json
+ *   npm run classify -- ~/Downloads/cotaja-backup-2026-11-18.json
  *
  * Fontes, nesta ordem: família do catálogo legado → palavras-chave no nome.
  * Produtos vinculados a um canônico herdam a categoria dele.
@@ -89,6 +89,19 @@ const FAMILY: Record<string, Cat> = {
   "proteinas > salsicha": "Embutidos e frios",
   "proteinas > hamburguer": "Embutidos e frios",
   "proteinas > suino": "Suínos",
+  "proteinas > pescados": "Peixes e frutos do mar",
+  "proteinas > lombo": "Embutidos e frios",
+  "mercearia > batatas congeladas": "Polpas e congelados",
+  "mercearia > batatas e vegetais congelados": "Polpas e congelados",
+  "mercearia > manteiga de garrafa": "Laticínios e queijos",
+};
+
+// Famílias do legado que misturam categorias: o nome decide
+const MIXED: Record<string, (n: string) => Cat> = {
+  "proteinas > suinos": (n) => (/\b(bacon|linguica|calabresa|salsicha)\b/.test(n) ? "Embutidos e frios" : "Suínos"),
+  "mercearia > frios e laticinios": (n) =>
+    /\b(apresuntado|presunto|mortadela|salame)\b/.test(n) ? "Embutidos e frios" : "Laticínios e queijos",
+  "mercearia > coco e derivados": (n) => (/\bagua de coco\b/.test(n) ? "Bebidas não alcoólicas" : "Mercearia"),
 };
 const LEGACY_DEFAULT: Record<string, Cat> = {
   mercearia: "Mercearia",
@@ -118,7 +131,7 @@ const KEYWORDS: [Cat, RegExp][] = [
   ["Molhos, temperos e condimentos", /\b(acafrao|chimichurri|colorau|oregano|tempero|molho|shoyu|ketchup|maionese|mostarda|sal de|cominho|louro|pimenta do reino|alho descascado|alho frito)/],
   ["Polpas e congelados", /\b(polpa|congelad|batata palito|seleta|iqf)\b/],
   ["Mercearia", /\b(azeitona|palmito|conserva|cogumelo|pimenta biquinho|tomate seco|kit feijoada|batata palha|arroz|feijao|acucar|cafe|farinha|macarrao|azeite|oleo|vinagre|castanha|biscoito|geleia|coco ralado|milho verde lata|ervilha lata|extrato)/],
-  ["Hortifruti", /\b(abacaxi|abobora|alface|batatinha|batata|brocolis|cebola|cenoura|cheiro|couve|jilo|limao|mandioca|manjericao|maxixe|milho|ovo|pimenta de cheiro|pimentao|quiabo|repolho|rucula|tomate|vermelho e amarelo|banana|laranja|maca|uva|melancia|melao|mamao|manga|alho|verdura|legume|fruta|hortalica|salsa|coentro|hortela|espinafre|agriao)/],
+  ["Hortifruti", /\b(abacaxi|abobora|alface|batatinha|batata|brocolis|cebola|cenoura|cheiro|couve|jilo|limao|mandioca|manjericao|maxixe|milho|ovo|pimenta de cheiro|pimentao|quiabo|repolho|rucula|tomate|vermelho e amarelo|banana|laranja|maca|uva|melancia|melao|mamao|manga|morango|alho|verdura|legume|fruta|hortalica|salsa|coentro|hortela|espinafre|agriao)/],
 ];
 
 function byKeywords(name: string): Cat | null {
@@ -128,7 +141,7 @@ function byKeywords(name: string): Cat | null {
 }
 
 async function main() {
-  const file = process.argv[2] ?? `${process.env.HOME}/Downloads/cotaja-backup-2026-11-16.json`;
+  const file = process.argv[2] ?? `${process.env.HOME}/Downloads/cotaja-backup-2026-11-18.json`;
   const legacy = existsSync(file) ? (JSON.parse(readFileSync(file, "utf8")) as { produtos: { nome: string; unidade: string; categoria?: string; familia?: string }[] }) : null;
   const familyOf = new Map<string, string>();
   for (const p of legacy?.produtos ?? []) familyOf.set(`${norm(p.nome)}|${norm(p.unidade)}`, `${norm(p.categoria ?? "")} > ${norm(p.familia ?? "")}`);
@@ -152,7 +165,13 @@ async function main() {
   }
 
   // 2. Canônicos
-  const { data: canon } = await db.from("canonical_products").select("id, name, unit");
+  const canon: { id: string; name: string; unit: string }[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await db.from("canonical_products").select("id, name, unit").order("id").range(from, from + 999);
+    if (error) throw new Error(error.message);
+    canon.push(...data);
+    if (data.length < 1000) break;
+  }
   const canonCat = new Map<string, Cat>();
   const unmatchedCanon: string[] = [];
   for (const c of canon ?? []) {
@@ -162,7 +181,7 @@ async function main() {
     if (/\b(papel higienico|papel toalha)\b/.test(norm(c.name))) cat = "Limpeza e higiene";
     else if (fam) {
       const legacyCat = fam.split(" > ")[0];
-      cat = FAMILY[fam] ?? byKeywordsIfSpecific(c.name, legacyCat) ?? LEGACY_DEFAULT[legacyCat] ?? null;
+      cat = FAMILY[fam] ?? MIXED[fam]?.(norm(c.name)) ?? byKeywordsIfSpecific(c.name, legacyCat) ?? LEGACY_DEFAULT[legacyCat] ?? null;
     }
     cat ??= byKeywords(c.name);
     if (cat) canonCat.set(c.id, cat);
