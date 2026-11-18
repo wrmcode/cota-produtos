@@ -110,7 +110,7 @@ export function SuppliersTable({
         value={segment}
         onChange={setSegment}
         total={suppliers.length}
-        className="mx-0 px-4 pb-3 sm:px-5"
+        className="mx-0 my-0 px-4 pt-1.5 pb-3 sm:px-5"
       />
 
       <Table>

@@ -65,7 +65,7 @@ export function SegmentFilter({
     <div
       role="group"
       aria-label="Filtrar por segmento"
-      className={cn("-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]", className)}
+      className={cn("-mx-1 -my-1 flex gap-1.5 overflow-x-auto px-1 py-1.5 [scrollbar-width:thin]", className)}
     >
       {options.map((o) => {
         const selected = value === o.name;
