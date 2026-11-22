@@ -22,6 +22,7 @@ import { CategoryCombobox } from "@/components/category-combobox";
 import { SupplierCombobox } from "@/components/customer/supplier-combobox";
 import { Field } from "@/components/form-field";
 import { shrinkImage } from "@/lib/import/shrink-image";
+import { expandZipFiles } from "@/lib/import/unzip-files";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,8 +64,9 @@ interface Row {
   matched: "exact" | "manual" | null;
 }
 
+const MAX_FILES = 10;
 const ACCEPT =
-  ".pdf,.png,.jpg,.jpeg,.webp,.gif,.xlsx,.xls,.xlsm,.csv,.ods,.txt,image/*,application/pdf";
+  ".zip,application/zip,.pdf,.png,.jpg,.jpeg,.webp,.gif,.xlsx,.xls,.xlsm,.csv,.ods,.txt,image/*,application/pdf";
 
 function toInput(v: number): string {
   return Number.isFinite(v) ? v.toFixed(2).replace(".", ",") : "";
@@ -109,6 +111,37 @@ export function ImportWizard({
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [expanding, setExpanding] = useState(false);
+
+  // ZIPs são abertos no navegador: a lista mostra o conteúdo real e as fotos
+  // de dentro também passam pelo shrinkImage antes do upload.
+  const selectFiles = async (list: File[]) => {
+    setExpanding(true);
+    try {
+      const { files: expanded, skipped } = await expandZipFiles(list);
+      if (skipped.length > 0)
+        toast.warning(
+          `Ignorados (tipo não suportado): ${skipped.slice(0, 5).join(", ")}${skipped.length > 5 ? ` e mais ${skipped.length - 5}` : ""}`,
+        );
+      if (expanded.length > MAX_FILES) {
+        toast.error(
+          `São ${expanded.length} arquivos; envie no máximo ${MAX_FILES} por vez.`,
+        );
+        setFiles([]);
+        if (fileRef.current) fileRef.current.value = "";
+        return;
+      }
+      if (list.length > 0 && expanded.length === 0)
+        toast.error("Nenhum arquivo suportado encontrado.");
+      setFiles(expanded);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao ler os arquivos.");
+      setFiles([]);
+      if (fileRef.current) fileRef.current.value = "";
+    } finally {
+      setExpanding(false);
+    }
+  };
   const [pending, startTransition] = useTransition();
 
   const [extraction, setExtraction] = useState<Extraction | null>(null);
@@ -328,7 +361,7 @@ export function ImportWizard({
 
           <Field
             label="Arquivos"
-            hint="Fotos (JPG/PNG/WebP), PDF, planilhas (XLSX/XLS/CSV) ou TXT. Até 10 arquivos de 20 MB."
+            hint="Fotos (JPG/PNG/WebP), PDF, planilhas (XLSX/XLS/CSV), TXT ou um ZIP com esses arquivos. Até 10 arquivos de 20 MB."
           >
             <Input
               ref={fileRef}
@@ -336,7 +369,9 @@ export function ImportWizard({
               multiple
               accept={ACCEPT}
               disabled={pending}
-              onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+              onChange={(e) =>
+                void selectFiles(Array.from(e.target.files ?? []))
+              }
               className="h-auto py-1.5"
             />
           </Field>
@@ -366,7 +401,9 @@ export function ImportWizard({
           </p>
           <Button
             type="submit"
-            disabled={pending || (!text.trim() && files.length === 0)}
+            disabled={
+              pending || expanding || (!text.trim() && files.length === 0)
+            }
           >
             {pending ? <Loader2 className="animate-spin" /> : <Sparkles />}
             {pending ? "Interpretando…" : "Interpretar com IA"}

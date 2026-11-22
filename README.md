@@ -16,7 +16,7 @@ Plataforma de cotação diária de preços. Fornecedores enviam todo dia os pre�
 - **Acessar como**: o admin escolhe um fornecedor ou cliente e navega nas telas reais daquele perfil, podendo editar. Uma faixa no topo indica o modo e permite sair.
 - **Produtos**: visão do catálogo de todos os fornecedores; editar nome, unidade e categoria; ativar/desativar; **unificar** nomes diferentes do mesmo item em um produto canônico (vincular/desvincular) para o ranking comparar corretamente.
 - **Categorias**: só o admin cria, renomeia e exclui categorias. Os fornecedores escolhem numa lista e não digitam categoria livre.
-- **Importação assistida por IA**: colar texto ou enviar fotos, PDF ou planilhas (XLSX/XLS/CSV) de uma lista de preços. A IA (Anthropic ou Gemini) extrai os itens para uma tabela de conferência com fornecedor, data, nome, unidade, categoria, preço e vínculo com produto existente. O admin ajusta e aprova; produtos novos são criados e as cotações gravadas. Imagens grandes são reduzidas automaticamente antes do envio.
+- **Importação assistida por IA**: colar texto ou enviar fotos, PDF ou planilhas (XLSX/XLS/CSV) de uma lista de preços, soltos ou num arquivo ZIP. A IA (Anthropic ou Gemini) extrai os itens para uma tabela de conferência com fornecedor, data, nome, unidade, categoria, preço e vínculo com produto existente. O admin ajusta e aprova; produtos novos são criados e as cotações gravadas. Imagens grandes são reduzidas automaticamente antes do envio.
 - **Atualizar dados**: botão que limpa o cache de leitura da aplicação.
 
 ### Fornecedor
